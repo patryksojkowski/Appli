@@ -1,0 +1,91 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Customers</h2>
+
+<p>
+    @Html.ActionLink("New customer", MVC.Customers.New(), new { @class = "btn btn-primary"} )
+</p>
+<table id="customers" class="table table-hover" style="width:auto">
+    <thead>
+        <tr>
+            <th>Customer</th>
+            <th>Discount rate</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+
+@section scripts
+{
+    <script>
+        // document is main object that represent this HTML page // function ready is called when this document object is ready
+        $(document).ready(function () {
+            // select table object with id 'customers' && load DataTable functionality
+            // simplest way to use DataTable plugin
+            var table = $("#customers").DataTable({
+                // pass ajax object
+                ajax: {
+                    // source for data (guess it calls GET)
+                    url: "/api/customers",
+                    // dataSrc is used to provide path to extract data from httprequest
+                    // in our case all data provided will be used as source, so there is no need for any path
+                    // maybe it would work without any dataSrc field defined ?
+                    dataSrc: ""
+                },
+                // column rendering functions provided to client
+                // data field is case-sensitive and should be spelled with lower camelcase (as we send json to client).
+                // Otherwise these fields wont be recognized
+                columns: [
+                    {
+                        data: "name",
+                        render: function (data, type, customer) {
+                            return "<a href='/customers/edit/" + customer.id + "'>" + customer.name + "</a>";
+                        }
+                    },
+                    {
+                        data: "membershipType.name"
+                    },
+                    {
+                        data: "id",
+                        render: function (data) {
+                            return "<button class='btn-link js-delete' data-customer-id=" + data + ">Delete</button>";
+                        }
+                    }
+                ]
+            });
+            // select object that has id 'customers' which is table
+            // on is function and click is event, second argument is filter class and last argument is callback function
+            $("#customers").on("click", ".js-delete", function () {
+                // creating reference to called object
+                var button = $(this);
+                // display YES/NO dialogbox that results TRUE/FALSE
+                // and calls callback function passed as argument (this function should get bool as argument)
+                bootbox.confirm("Are you sure you want to delete customer?", function (result) {
+                    if (result) {
+                        // perform ASYNCHRONOUS XML HTTP REQUEST
+                        $.ajax({
+                            // url is madatory field fot this request
+                            url: "/api/customers/" + button.attr("data-customer-id"),
+                            // additional settings - optional
+                            // HTTP DELETE
+                            method: "DELETE",
+                            // in case of SUCCESS call function
+                            success: function () {
+                                // this function selects parent object that is type <tr> and removes it.
+                                table.row(button.parents("tr")).remove();
+                                // redraw table once row is removed
+                                table.draw();
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}
